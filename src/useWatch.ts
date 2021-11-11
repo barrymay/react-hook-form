@@ -2,8 +2,6 @@ import * as React from 'react';
 
 import { generateWatchOutput } from './logic/generateWatchOutput';
 import shouldSubscribeByName from './logic/shouldSubscribeByName';
-import isObject from './utils/isObject';
-import isString from './utils/isString';
 import isUndefined from './utils/isUndefined';
 import {
   Control,
@@ -17,7 +15,6 @@ import {
 } from './types';
 import { useFormContext } from './useFormContext';
 import { useSubscribe } from './useSubscribe';
-import { get } from './utils';
 
 export function useWatch<
   TFieldValues extends FieldValues = FieldValues,
@@ -37,13 +34,17 @@ export function useWatch<
 }): FieldPathValue<TFieldValues, TFieldName>;
 export function useWatch<
   TFieldValues extends FieldValues = FieldValues,
-  TFieldNames extends FieldPath<TFieldValues>[] = FieldPath<TFieldValues>[],
+  TFieldNames extends readonly FieldPath<TFieldValues>[] = readonly FieldPath<TFieldValues>[],
 >(props: {
-  name: [...TFieldNames];
+  name: TFieldNames;
   defaultValue?: UnpackNestedValue<DeepPartialSkipArrayKey<TFieldValues>>;
   control?: Control<TFieldValues>;
   disabled?: boolean;
 }): FieldPathValues<TFieldValues, TFieldNames>;
+export function useWatch<
+  TFieldValues extends FieldValues = FieldValues,
+  TFieldNames extends FieldPath<TFieldValues>[] = FieldPath<TFieldValues>[],
+>(): FieldPathValues<TFieldValues, TFieldNames>;
 export function useWatch<TFieldValues>(props?: UseWatchProps<TFieldValues>) {
   const methods = useFormContext();
   const {
@@ -64,15 +65,11 @@ export function useWatch<TFieldValues>(props?: UseWatchProps<TFieldValues>) {
         const fieldValues = generateWatchOutput(
           _name.current,
           control._names,
-          control._formValues,
+          formState.values || control._formValues,
         );
 
         updateValue(
-          isObject(fieldValues) &&
-            !(
-              isString(_name.current) &&
-              get(control._fields, _name.current, {})._f
-            )
+          isUndefined(_name.current)
             ? { ...fieldValues }
             : Array.isArray(fieldValues)
             ? [...fieldValues]
